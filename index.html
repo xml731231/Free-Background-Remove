@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearCut AI | Background Remover</title>
+    <script src="coi-serviceworker.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+    <div class="glass p-8 rounded-3xl w-full max-w-lg text-center shadow-2xl">
+        <h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">ClearCut AI</h1>
+        <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 hover:border-blue-500 transition-all cursor-pointer">
+            <p id="status-text" class="text-slate-300">Click to Upload Image</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*">
+        </div>
+        <div id="result-area" class="hidden mt-6">
+            <img id="output-img" class="rounded-lg mb-4 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-500">
+            <button id="dl-btn" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Download PNG</button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const statusText = document.getElementById('status-text');
+        const resultArea = document.getElementById('result-area');
+        const outputImg = document.getElementById('output-img');
+
+        dropZone.onclick = () => fileInput.click();
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            statusText.innerText = "Loading AI Engine...";
+            resultArea.classList.add('hidden');
+
+            try {
+                const config = {
+                    publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/",
+                    progress: (item, loaded, total) => {
+                        statusText.innerText = `Processing: ${Math.round((loaded/total)*100)}%`;
+                    }
+                };
+                const blob = await imglyRemoveBackground(file, config);
+                outputImg.src = URL.createObjectURL(blob);
+                resultArea.classList.remove('hidden');
+                statusText.innerText = "Done!";
+                document.getElementById('dl-btn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = outputImg.src;
+                    a.download = "no-bg.png";
+                    a.click();
+                };
+            } catch (err) {
+                statusText.innerText = "Error: Use Chrome/Edge/Firefox";
+                console.error(err);
+            }
+        };
+    </script>
+</body>
+</html>
