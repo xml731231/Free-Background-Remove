@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="coi-serviceworker.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearCut AI | Fix Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="glass p-8 rounded-3xl w-full max-w-lg text-center shadow-2xl">
+        <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">ClearCut AI</h1>
+        <p class="text-slate-400 mb-8 text-sm">AI runs in your browser. No data leaves your PC.</p>
+
+        <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 hover:border-blue-500 transition-all cursor-pointer mb-6">
+            <p id="status-text" class="text-slate-300">Click or Drag Image Here</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*">
+            <div id="loader" class="hidden mt-4">
+                <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="progress" class="bg-blue-500 h-full w-0 transition-all"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-container" class="hidden animate-fade-in">
+            <div class="rounded-lg overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-500 mb-4">
+                <img id="output-img" class="max-w-full mx-auto">
+            </div>
+            <button id="dl-btn" class="w-full bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors">Download PNG</button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const statusText = document.getElementById('status-text');
+        const loader = document.getElementById('loader');
+        const progress = document.getElementById('progress');
+        const resultContainer = document.getElementById('result-container');
+        const outputImg = document.getElementById('output-img');
+
+        dropZone.onclick = () => fileInput.click();
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Reset UI
+            statusText.innerText = "Loading AI Model...";
+            loader.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            try {
+                // IMPORTANT CONFIG: Tells the library exactly where to find its AI files online
+                const config = {
+                    publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/",
+                    progress: (item, loaded, total) => {
+                        const pct = Math.round((loaded / total) * 100);
+                        progress.style.width = pct + "%";
+                        statusText.innerText = `Processing... ${pct}%`;
+                    }
+                };
+
+                const blob = await imglyRemoveBackground(file, config);
+                const url = URL.createObjectURL(blob);
+
+                outputImg.src = url;
+                resultContainer.classList.remove('hidden');
+                loader.classList.add('hidden');
+                statusText.innerText = "Done! Ready to download.";
+
+                document.getElementById('dl-btn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "no-bg.png";
+                    a.click();
+                };
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Error. Try refreshing the page.";
+                alert("Security block: This tool works best when uploaded to GitHub.");
+            }
+        };
+    </script>
+</body>
+</html>
