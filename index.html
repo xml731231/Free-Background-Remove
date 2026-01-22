@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearCut AI | Fixed Version</title>
+    <title>ClearCut AI | Final Fix</title>
     
     <script src="coi-serviceworker.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/bundle.js"></script>
     
     <style>
         body { background-color: #0f172a; color: white; font-family: sans-serif; }
@@ -19,23 +19,18 @@
 
     <div class="glass p-8 rounded-3xl w-full max-w-lg text-center shadow-2xl">
         <h1 class="text-3xl font-bold mb-2 text-blue-400">ClearCut AI</h1>
-        <p class="text-slate-400 mb-6 text-sm">Professional AI Background Remover</p>
-
-        <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 hover:border-blue-500 transition-all cursor-pointer mb-4">
-            <p id="status-text" class="text-slate-300">Click or Drag Image Here</p>
+        
+        <div id="drop-zone" class="mt-6 border-2 border-dashed border-slate-600 rounded-2xl p-10 hover:border-blue-500 transition-all cursor-pointer">
+            <p id="status-text" class="text-slate-300">Upload Image to Start</p>
             <input type="file" id="file-input" class="hidden" accept="image/*">
         </div>
 
-        <button onclick="location.reload(true)" class="text-xs text-slate-500 hover:text-blue-400 underline">
-            Not working? Click here to refresh security
-        </button>
-
         <div id="result-container" class="hidden mt-6">
-            <div class="rounded-lg overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-500 mb-4">
-                <img id="output-img" class="max-w-full mx-auto">
-            </div>
-            <button id="dl-btn" class="w-full bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors">Download PNG</button>
+            <img id="output-img" class="rounded-lg mb-4 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-500 max-w-full mx-auto">
+            <button id="dl-btn" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Download PNG</button>
         </div>
+
+        <p class="mt-8 text-[10px] text-slate-500 italic">If it fails: Refresh (Ctrl+F5) and try again.</p>
     </div>
 
     <script>
@@ -51,36 +46,38 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            statusText.innerText = "Processing... (This takes 10-20s)";
+            statusText.innerText = "Initializing AI Engine...";
             resultContainer.classList.add('hidden');
 
             try {
+                // Testing if the library loaded correctly
+                if (typeof imglyRemoveBackground === 'undefined') {
+                    throw new Error("Library not loaded. Check internet connection.");
+                }
+
                 const config = {
-                    // This tells the tool where to find its AI files online
                     publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/",
                     progress: (item, loaded, total) => {
                         const pct = Math.round((loaded / total) * 100);
-                        statusText.innerText = `AI is thinking: ${pct}%`;
+                        statusText.innerText = `AI Thinking: ${pct}%`;
                     }
                 };
 
-                // The AI function
                 const blob = await imglyRemoveBackground(file, config);
-                const url = URL.createObjectURL(blob);
-
-                outputImg.src = url;
+                outputImg.src = URL.createObjectURL(blob);
                 resultContainer.classList.remove('hidden');
-                statusText.innerText = "Done! Click below to download.";
+                statusText.innerText = "Done! Upload another?";
 
                 document.getElementById('dl-btn').onclick = () => {
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = "no-background.png";
+                    a.href = outputImg.src;
+                    a.download = "no-bg.png";
                     a.click();
                 };
             } catch (err) {
                 console.error(err);
-                statusText.innerText = "Error. Please click 'Refresh security' above.";
+                statusText.innerText = "Error: " + err.message;
+                alert("Security block or Library error. Please Refresh the page and try again.");
             }
         };
     </script>
