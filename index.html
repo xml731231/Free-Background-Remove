@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearCut AI | Pro Background Remover</title>
+    <title>ClearCut AI | Fixed Version</title>
     
     <script src="coi-serviceworker.js"></script>
 
@@ -11,63 +11,39 @@
     <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .drop-zone--over { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-10">
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
 
-    <header class="text-center mb-10">
-        <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-            ClearCut AI
-        </h1>
-        <p class="text-slate-400 mt-2">Professional Background Removal — Edge & Chrome Fixed</p>
-    </header>
+    <div class="glass p-8 rounded-3xl w-full max-w-lg text-center shadow-2xl">
+        <h1 class="text-3xl font-bold mb-2 text-blue-400">ClearCut AI</h1>
+        <p class="text-slate-400 mb-6 text-sm">Professional AI Background Remover</p>
 
-    <main class="w-full max-w-lg space-y-8">
-        <div id="drop-zone" class="glass rounded-3xl p-12 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center transition-all cursor-pointer">
-            <div id="upload-ui" class="text-center">
-                <div class="bg-blue-600 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-semibold">Upload an Image</h2>
-                <p id="status-text" class="text-slate-400 mt-1">Click to browse or drag & drop</p>
-                <input type="file" id="file-input" class="hidden" accept="image/*">
-            </div>
-
-            <div id="loading-ui" class="hidden text-center w-full">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p id="progress-text" class="text-sm text-slate-300 italic font-mono">Initializing AI...</p>
-            </div>
+        <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 hover:border-blue-500 transition-all cursor-pointer mb-4">
+            <p id="status-text" class="text-slate-300">Click or Drag Image Here</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*">
         </div>
 
-        <div id="result-area" class="hidden animate-fade-in text-center">
-            <div class="glass p-4 rounded-2xl">
-                <p class="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">Processed Result</p>
-                <div class="rounded-lg overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-400">
-                    <img id="output-img" class="max-w-full h-auto mx-auto shadow-xl">
-                </div>
-                <button id="download-btn" class="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-blue-900/20">
-                    Download Transparent PNG
-                </button>
+        <button onclick="location.reload(true)" class="text-xs text-slate-500 hover:text-blue-400 underline">
+            Not working? Click here to refresh security
+        </button>
+
+        <div id="result-container" class="hidden mt-6">
+            <div class="rounded-lg overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-500 mb-4">
+                <img id="output-img" class="max-w-full mx-auto">
             </div>
+            <button id="dl-btn" class="w-full bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors">Download PNG</button>
         </div>
-    </main>
+    </div>
 
     <script>
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
-        const uploadUI = document.getElementById('upload-ui');
-        const loadingUI = document.getElementById('loading-ui');
         const statusText = document.getElementById('status-text');
-        const progressText = document.getElementById('progress-text');
-        const resultArea = document.getElementById('result-area');
+        const resultContainer = document.getElementById('result-container');
         const outputImg = document.getElementById('output-img');
-        const downloadBtn = document.getElementById('download-btn');
 
         dropZone.onclick = () => fileInput.click();
 
@@ -75,45 +51,36 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // Reset and Show Loading
-            uploadUI.classList.add('hidden');
-            loadingUI.classList.remove('hidden');
-            resultArea.classList.add('hidden');
+            statusText.innerText = "Processing... (This takes 10-20s)";
+            resultContainer.classList.add('hidden');
 
             try {
-                // High-performance AI Configuration
                 const config = {
+                    // This tells the tool where to find its AI files online
                     publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/",
                     progress: (item, loaded, total) => {
                         const pct = Math.round((loaded / total) * 100);
-                        progressText.innerText = `AI Processing: ${pct}%`;
+                        statusText.innerText = `AI is thinking: ${pct}%`;
                     }
                 };
 
-                // Execute background removal
+                // The AI function
                 const blob = await imglyRemoveBackground(file, config);
                 const url = URL.createObjectURL(blob);
 
-                // Display result
                 outputImg.src = url;
-                loadingUI.classList.add('hidden');
-                uploadUI.classList.remove('hidden');
-                resultArea.classList.remove('hidden');
-                statusText.innerText = "Success! Upload another?";
+                resultContainer.classList.remove('hidden');
+                statusText.innerText = "Done! Click below to download.";
 
-                // Download logic
-                downloadBtn.onclick = () => {
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = "clearcut-removed.png";
-                    link.click();
+                document.getElementById('dl-btn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "no-background.png";
+                    a.click();
                 };
-
-            } catch (error) {
-                console.error("AI Error:", error);
-                alert("Security Error: Please ensure 'coi-serviceworker.js' is in your GitHub folder and refresh the page.");
-                loadingUI.classList.add('hidden');
-                uploadUI.classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Error. Please click 'Refresh security' above.";
             }
         };
     </script>
